@@ -1,0 +1,23 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* --- ARKA PLAN GRADIENT BURADA --- */
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+html, body {
+  height: 100%;
+background: linear-gradient(180deg, #0ea5e9 0%, #0369a1 100%) !important;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
