@@ -15,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
@@ -33,7 +35,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public DaoAuthenticationProvider authProvider() {
+    public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
@@ -45,42 +47,49 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    // CORS AYARLARI
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of(
+                "*",
+                "http://localhost:3000",
+                "http://localhost:3200",
+                "https://fsweb-s19-challenge-1.onrender.com"
+        ));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(false);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        // CORS
-        http.cors(cors -> cors.configurationSource(request -> {
-            CorsConfiguration config = new CorsConfiguration();
-            config.setAllowedOrigins(List.of(
-                    "*",
-                    "http://localhost:3000",
-                    "http://localhost:3200",
-                    "https://fsweb-s19-challenge-1.onrender.com"
-            ));
-            config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-            config.setAllowedHeaders(List.of("*"));
-            config.setAllowCredentials(false);
-            return config;
-        }));
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
 
-        http.csrf(csrf -> csrf.disable());
-        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                        // PUBLIC ENDPOINTS
+                        .requestMatchers(
+                                "/",
+                                "/error",
+                                "/auth/**",
+                                "/api/auth/**",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
+                        ).permitAll()
 
-        http.authorizeHttpRequests(auth -> auth
+                        // OTHER REQUESTS NEED JWT
+                        .anyRequest().authenticated()
+                );
 
-                // 🔓 PUBLIC
-                .requestMatchers("/", "/error").permitAll()
-                .requestMatchers("/auth/**").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
-
-                // 🔐 OTHER API NEED JWT
-                .requestMatchers("/api/**").authenticated()
-
-                // default
-                .anyRequest().permitAll()
-        );
-
-        http.authenticationProvider(authProvider());
+        http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
